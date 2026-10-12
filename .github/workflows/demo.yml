@@ -1,0 +1,46 @@
+name: Environment Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create artifact
+        run: |
+          mkdir dist
+          cp app.js dist/app.js
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-app
+          path: dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        target: [development, production]
+
+    environment: ${{ matrix.target }}
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: my-app
+
+      - name: Run application
+        env:
+          APP_ENV: ${{ vars.APP_ENV }}
+          APP_MODE: ${{ vars.APP_MODE }}
+          API_URL: ${{ vars.API_URL }}
+        run: node app.js
+
+      - name: Verify artifact
+        run: sha256sum app.js
